@@ -62,7 +62,7 @@ def get_logprobs_llama(prompt, base_url):
 
     return [ LlamaPropability(prob['tok_str'], prob['prob']) for prob in probs]
 
-def spawn_threads(prompt, depth, cutoff, multiplier, acc = 0.0):
+def spawn_threads(prompt, original_prompt, depth, cutoff, multiplier, acc = 0.0):
 
     if os.getenv('LLAMA_API_URL') is not None:
         logprobs = get_logprobs_llama(prompt, os.getenv('LLAMA_API_URL'))
@@ -82,15 +82,26 @@ def spawn_threads(prompt, depth, cutoff, multiplier, acc = 0.0):
         chosen.append(token)
         
         new_prompt = prompt + token
-        print(f"Spawning new thread: {new_prompt} (prob: {probability:.4f})")
+        print(f"Spawning new thread at {depth}: {new_prompt} (prob: {probability:.4f})")
                 
         # Increase cutoff for deeper levels and recurse
         new_cutoff = cutoff * multiplier
-        if depth > 0:
-            for final_thread in spawn_threads(new_prompt, depth - 1, new_cutoff, multiplier, acc+probability):
-                yield final_thread
-        else:
+        early_finish = False
+        
+        if depth == -1:
+            new_tokens = new_prompt[len(original_prompt):]
+            print(new_tokens)
+            if '.' in new_tokens:
+                trimmed_prompt = original_prompt + new_tokens[:new_tokens.find('.')+1]
+                yield (acc+probability, trimmed_prompt)
+                early_finish = True
+        elif depth == 0:
             yield (acc+probability, new_prompt)
+            early_finish = True
+            
+        if not early_finish:            
+            for final_thread in spawn_threads(new_prompt, original_prompt, depth - 1 if depth > 0 else -1, new_cutoff, multiplier, acc+probability):
+                yield final_thread
 
 def main():
     st.set_page_config(layout='wide', page_title='The LLooM')
@@ -114,14 +125,18 @@ def main():
     
     if st.session_state.page == 0:
         st.title("The LLooM")
-        config_cols = st.columns((1,1,1))
-        depth = config_cols[0].number_input("Depth", min_value=1, max_value=10, value=6)
-        cutoff = config_cols[1].number_input("Cutoff", min_value=0.0, max_value=1.0, value=0.2, step=0.01)
-        multiplier = config_cols[2].number_input("Multiplier", min_value=0.0, max_value=2.0, value=1.0, step=0.1)
+        config_cols = st.columns((1,1))
+        config_cols[0].markdown('Stop conditions')
+        story_depth = config_cols[0].checkbox("Auto-depth (runs until end of sentences - might take a while!)", value=False)
+        depth = config_cols[0].number_input("Depth", min_value=1, max_value=10, value=6, disabled=story_depth)
         
-        st.session_state.config = (depth, cutoff, multiplier)
+        config_cols[1].markdown('Probability')
+        cutoff = config_cols[1].number_input("Cutoff", help="Minimum propability of a token to have it spawn a new suggestion beam", min_value=0.0, max_value=1.0, value=0.2, step=0.01)
+        multiplier = config_cols[1].number_input("Multiplier", help="The cutoff is scaled by Multiplier each time a new token is generated", min_value=0.0, max_value=2.0, value=1.0, step=0.1)
+        
+        st.session_state.config = (depth, cutoff, multiplier, story_depth)
     else:
-        (depth, cutoff, multiplier) = st.session_state.config   
+        (depth, cutoff, multiplier, story_depth) = st.session_state.config   
         
     if st.session_state.page == 0:
         start_prompt = st.selectbox("Start Prompt", STARTING_STORIES)
@@ -146,7 +161,7 @@ def main():
             please_wait = st.empty()
             with please_wait.status('Please wait..') as status:
                 threads = []
-                for thread in spawn_threads(story_so_far, depth, cutoff, multiplier):
+                for thread in spawn_threads(story_so_far, story_so_far, -1 if story_depth else depth, cutoff, multiplier):
                     label = thread[1][len(story_so_far):]                    
                     status.update(label=label, state="running")
                     threads.append(thread)
