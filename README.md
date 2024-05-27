@@ -16,7 +16,7 @@ Give the LLooM a starting prompt, or change the Story any time by directly editi
 
 Click ➡️ beside a suggestion to accept it, or edit the suggestion (press Enter when done) in-line before accepting.
 
-Have fun!
+*Have fun!*
 
 # Launching
 
