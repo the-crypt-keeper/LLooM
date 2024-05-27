@@ -110,7 +110,8 @@ def main():
         (depth, cutoff, multiplier) = st.session_state.config   
         
     if st.session_state.page == 0:
-        start_prompt = st.text_input("Start Prompt", "In the age before man,", label_visibility='hidden')    
+        start_prompt = st.selectbox("Start Prompt", STARTING_STORIES)
+        # text_input("Start Prompt", "In the age before man,", label_visibility='hidden')    
         if st.button("Start"):
             st.session_state.story_so_far = start_prompt
             st.session_state.page = 1
@@ -125,15 +126,16 @@ def main():
             st.session_state.threads = None
         
         if st.session_state.threads == None:
-
-            with st.status('Please wait..') as status:
+            please_wait = st.empty()
+            with please_wait.status('Please wait..') as status:
                 threads = []
                 for thread in spawn_threads(story_so_far, depth, cutoff, multiplier):
                     label = thread[1][len(story_so_far):]
                     status.update(label=label, state="running")
                     threads.append(thread)
                 status.update(label="Threading complete.", state="complete", expanded=False)
-
+            please_wait.write('')
+            
             sorted_threads = sorted(threads, key=lambda x: x[0], reverse=True)
             
             # remove duplicate threads

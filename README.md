@@ -1,8 +1,10 @@
 # The LLooM
 
-Weaving the threads of propability one token at a time.
+Leverage raw LLM logits to weave the threads propability a few tokens at a time.
 
-Sorta like beamsearching, but with a human in the loop.
+The problem with straight greedy decoding is that due to the self-recursive nature of LLMs, if there's a high-propability token hidden behind a low-probability one then greedy wont find it.
+
+Conceptually this idea is similar to beamsearching, tracking multiple candidates at once, but with a human in the loop and unlimited beams.
 
 # Launching
 
