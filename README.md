@@ -20,6 +20,12 @@ Have fun!
 
 # Launching
 
+## Prepare environment
+
+`pip3 install requests graphviz streamlit`
+
+`sudo apt-get install -y graphviz`
+
 ## Usage with llama.cpp
 
 First, launch a llama.cpp server with a good Llama3-70B finetune:
