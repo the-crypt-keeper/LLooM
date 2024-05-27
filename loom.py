@@ -2,6 +2,7 @@ import numpy as np
 import streamlit as st
 import hashlib
 import requests
+import os
 
 def computeMD5hash(my_string):
     m = hashlib.md5()
@@ -32,7 +33,7 @@ def get_logprobs_openai(prompt, model="gpt-3.5-turbo"):
         
     return top_logprobs
 
-def get_logprobs_llama(prompt, base_url = 'http://10.0.0.169:8080'):
+def get_logprobs_llama(prompt, base_url):
     class LlamaPropability:
         def __init__(self, token, probability):
             self.token = token
@@ -56,7 +57,13 @@ def get_logprobs_llama(prompt, base_url = 'http://10.0.0.169:8080'):
 
 def spawn_threads(prompt, depth, cutoff, multiplier, acc = 0.0):
 
-    logprobs = get_logprobs_llama(prompt)
+    if os.getenv('LLAMA_API_URL') is not None:
+        logprobs = get_logprobs_llama(prompt, os.getenv('LLAMA_API_URL'))
+    elif os.getenv('OPENAI_API_KEY') is not None:
+        logprobs = get_logprobs_openai(prompt)
+    else:
+        raise Exception('Please set either OPENAI_API_KEY or LLAMA_API_URL')
+
     chosen = []
     
     for logprob_choice in logprobs:
