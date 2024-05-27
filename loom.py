@@ -1,18 +1,22 @@
-from openai import OpenAI
-client = OpenAI()
 import numpy as np
 import streamlit as st
 import hashlib
+import requests
 
 def computeMD5hash(my_string):
     m = hashlib.md5()
     m.update(my_string.encode('utf-8'))
     return m.hexdigest()
 
-def get_logprobs(prompt, model="gpt-3.5-turbo"):
+openai_client = None
+def get_logprobs_openai(prompt, model="gpt-3.5-turbo"):
+    global openai_client
+    if openai_client is None:
+        from openai import OpenAI
+        openai_client = OpenAI()
     
     messages = [{'role': 'user', 'content': prompt}]
-    response = client.chat.completions.create(
+    response = openai_client.chat.completions.create(
         model=model,
         messages=messages,
         temperature=0.7,
@@ -21,21 +25,43 @@ def get_logprobs(prompt, model="gpt-3.5-turbo"):
         top_logprobs=10,
         n=1
     )
-    return response.choices[0].logprobs.content[0].top_logprobs
+    
+    top_logprobs = response.choices[0].logprobs.content[0].top_logprobs
+    for logprob in top_logprobs:
+        logprob.probability = np.exp(logprob.logprob)
+        
+    return top_logprobs
+
+def get_logprobs_llama(prompt, base_url = 'http://10.0.0.169:8080'):
+    class LlamaPropability:
+        def __init__(self, token, probability):
+            self.token = token
+            self.probability = probability
+   
+    url = base_url+'/completion'
+    payload = { 'prompt': prompt,
+            'cache_prompt': True,
+            'temperature': 1.0,
+            'n_predict': 1,
+            'top_k': 10,
+            'top_p': 1.0,
+            'n_probs': 10
+           }
+    
+    response = requests.post(url, json=payload)
+    probs = response.json()['completion_probabilities'][0]['probs']
+    print(probs)
+
+    return [ LlamaPropability(prob['tok_str'], prob['prob']) for prob in probs]
 
 def spawn_threads(prompt, depth, cutoff, multiplier, acc = 0.0):
-    if depth == 0:
-        return [(acc, prompt)]
-    
-    logprobs = get_logprobs(prompt)
-    threads = []
+
+    logprobs = get_logprobs_llama(prompt)
     chosen = []
     
     for logprob_choice in logprobs:
         token = logprob_choice.token
-        logprob = logprob_choice.logprob
-        
-        probability = np.exp(logprob)
+        probability = logprob_choice.probability
         print('CHOICE:', token, probability)
         
         if len(chosen) > 0 and probability < cutoff: break
@@ -46,10 +72,11 @@ def spawn_threads(prompt, depth, cutoff, multiplier, acc = 0.0):
                 
         # Increase cutoff for deeper levels and recurse
         new_cutoff = cutoff * multiplier
-        sub_threads = spawn_threads(new_prompt, depth - 1, new_cutoff, multiplier, acc+probability)
-        threads.extend(sub_threads)
-    
-    return threads
+        if depth > 0:
+            for final_thread in spawn_threads(new_prompt, depth - 1, new_cutoff, multiplier, acc+probability):
+                yield final_thread
+        else:
+            yield (acc+probability, new_prompt)
 
 def main():
     st.set_page_config(layout='centered', page_title='The LLooM')
@@ -61,8 +88,8 @@ def main():
     
     if st.session_state.page == 0:
         config_cols = st.columns((1,1,1))
-        depth = config_cols[0].number_input("Depth", min_value=1, max_value=10, value=4)
-        cutoff = config_cols[1].number_input("Cutoff", min_value=0.0, max_value=1.0, value=0.1, step=0.01)
+        depth = config_cols[0].number_input("Depth", min_value=1, max_value=10, value=6)
+        cutoff = config_cols[1].number_input("Cutoff", min_value=0.0, max_value=1.0, value=0.2, step=0.01)
         multiplier = config_cols[2].number_input("Multiplier", min_value=0.0, max_value=2.0, value=1.0, step=0.1)
         
         st.session_state.config = (depth, cutoff, multiplier)
@@ -70,7 +97,7 @@ def main():
         (depth, cutoff, multiplier) = st.session_state.config   
         
     if st.session_state.page == 0:
-        start_prompt = st.text_input("Start Prompt", "In the dark ages before man,", label_visibility='hidden')    
+        start_prompt = st.text_input("Start Prompt", "In the age before man,", label_visibility='hidden')    
         if st.button("Start"):
             st.session_state.story_so_far = start_prompt
             st.session_state.page = 1
@@ -86,8 +113,14 @@ def main():
         
         if st.session_state.threads == None:
 
-            with st.spinner('Please wait..'):
-                threads = spawn_threads(story_so_far, depth, cutoff, multiplier)        
+            with st.status('Please wait..') as status:
+                threads = []
+                for thread in spawn_threads(story_so_far, depth, cutoff, multiplier):
+                    label = thread[1][len(story_so_far):]
+                    status.update(label=label, state="running")
+                    threads.append(thread)
+                status.update(label="Threading complete.", state="complete", expanded=False)
+
             sorted_threads = sorted(threads, key=lambda x: x[0], reverse=True)
             
             # remove duplicate threads
@@ -119,10 +152,9 @@ def main():
         sum_probs = sum([prob for prob, _ in threads])
         with buttons:
             for prob, thread in threads:
-                print(prob, thread)
                 col1, col2 = st.columns((3,1))
                 col2.progress(value=prob/sum_probs)
-                new_text = col1.text_input(f'', value=thread, key='text-'+computeMD5hash(thread), label_visibility='hidden')
+                new_text = col1.text_input(thread, value=thread, key='text-'+computeMD5hash(thread), label_visibility='hidden')
                 if col2.button(':arrow_right:', key='ok-'+computeMD5hash(thread)):
                     st.session_state.story_so_far += (" " if user_add_space else "") + new_text
                     st.session_state.threads = None
