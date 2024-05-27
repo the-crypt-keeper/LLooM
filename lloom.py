@@ -90,11 +90,12 @@ def spawn_threads(prompt, original_prompt, depth, cutoff, multiplier, acc = 0.0)
         
         if depth == -1:
             new_tokens = new_prompt[len(original_prompt):]
-            print(new_tokens)
-            if '.' in new_tokens:
-                trimmed_prompt = original_prompt + new_tokens[:new_tokens.find('.')+1]
-                yield (acc+probability, trimmed_prompt)
-                early_finish = True
+            stop_tokens = ['.',',']
+            for st in stop_tokens:
+                if (not early_finish) and (st in new_tokens):
+                    trimmed_prompt = original_prompt + new_tokens[:new_tokens.find(st)+1]
+                    yield (acc+probability, trimmed_prompt)
+                    early_finish = True
         elif depth == 0:
             yield (acc+probability, new_prompt)
             early_finish = True
