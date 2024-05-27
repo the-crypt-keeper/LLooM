@@ -58,20 +58,6 @@ def spawn_threads(messages, depth, cutoff, multiplier, acc = 0.0):
     
     return threads
 
-# def main():
-#     start_prompt = "In the dark ages before man,"
-#     messages = [{'role': 'user', 'content': start_prompt}]
-
-#     depth = 4       # Depth in tokens
-#     cutoff = 0.1     # Starting probability cutoff
-#     multiplier = 1.0 # Multiplier to increase cutoff per token
-
-#     threads = spawn_threads(messages, depth, cutoff, multiplier)
-    
-#     print("Inference threads generated:")
-#     for thread in threads:
-#         print(thread)
-
 def main():
     st.set_page_config(layout='centered', page_title='The LLooM')
     st.title("The LLooM")
