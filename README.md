@@ -1,6 +1,10 @@
 # The LLooM
 
-Weave the threads of propability.
+Weaving the threads of propability one token at a time.
+
+Sorta like beamsearching, but with a human in the loop.
+
+# Launching
 
 ## Usage with llama.cpp
 
@@ -25,3 +29,17 @@ Launch the frontend with `OPENAI_API_KEY`
 ```
 OPENAI_API_KEY=sk-... streamlit run loom.py
 ```
+
+# Parameters
+
+`Depth` How many tokens to generate per suggestion beam.
+
+`Cutoff` The minimum token propability (0.0 - 1.0) to spawn a new thread.
+
+`Multiplier` cutoff per token slope (1.0: fixed cutoff, <1.0 cutoff decreases with depth, >1.0 cutoff increases with depth)
+
+# Using
+
+Give the LLooM a starting prompt, or change the Story any time.
+
+Note that you can edit the suggestions in-line before accepting them.
