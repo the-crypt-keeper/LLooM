@@ -9,7 +9,9 @@ def computeMD5hash(my_string):
     m.update(my_string.encode('utf-8'))
     return m.hexdigest()
 
-def get_logprobs(messages, model="gpt-3.5-turbo"):
+def get_logprobs(prompt, model="gpt-3.5-turbo"):
+    
+    messages = [{'role': 'user', 'content': prompt}]
     response = client.chat.completions.create(
         model=model,
         messages=messages,
@@ -21,11 +23,11 @@ def get_logprobs(messages, model="gpt-3.5-turbo"):
     )
     return response.choices[0].logprobs.content[0].top_logprobs
 
-def spawn_threads(messages, depth, cutoff, multiplier, acc = 0.0):
+def spawn_threads(prompt, depth, cutoff, multiplier, acc = 0.0):
     if depth == 0:
-        return [(acc, messages[-1]['content'])]
+        return [(acc, prompt)]
     
-    logprobs = get_logprobs(messages)
+    logprobs = get_logprobs(prompt)
     threads = []
     chosen = []
     
@@ -37,23 +39,14 @@ def spawn_threads(messages, depth, cutoff, multiplier, acc = 0.0):
         print('CHOICE:', token, probability)
         
         if len(chosen) > 0 and probability < cutoff: break
-        skip = False
-        for prev_token in chosen:
-            if " "+token == prev_token:
-                print('SPACE SKIP')
-                skip = True
-        # if skip: continue
         chosen.append(token)
         
-        new_prompt = messages[-1]['content'] + token
+        new_prompt = prompt + token
         print(f"Spawning new thread: {new_prompt} (prob: {probability:.4f})")
-        
-        new_message = [{'role': 'user', 'content': new_prompt}]
-        # threads.append(new_prompt)
-        
-        # Increase cutoff for deeper levels
+                
+        # Increase cutoff for deeper levels and recurse
         new_cutoff = cutoff * multiplier
-        sub_threads = spawn_threads(new_message, depth - 1, new_cutoff, multiplier, acc+probability)
+        sub_threads = spawn_threads(new_prompt, depth - 1, new_cutoff, multiplier, acc+probability)
         threads.extend(sub_threads)
     
     return threads
@@ -92,9 +85,9 @@ def main():
             st.session_state.threads = None
         
         if st.session_state.threads == None:
-            messages = [{'role': 'user', 'content': story_so_far}]
+
             with st.spinner('Please wait..'):
-                threads = spawn_threads(messages, depth, cutoff, multiplier)        
+                threads = spawn_threads(story_so_far, depth, cutoff, multiplier)        
             sorted_threads = sorted(threads, key=lambda x: x[0], reverse=True)
             
             # remove duplicate threads
