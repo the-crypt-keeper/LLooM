@@ -19,7 +19,7 @@ Note that you cannot use -fa as this results in all the logits being `null`.
 Then launch the frontend with `LLAMA_API_URL` set to the host and port of the server:
 
 ```
-LLAMA_API_URL=http://127.0.0.1:8080 streamlit run loom.py
+LLAMA_API_URL=http://127.0.0.1:8080 streamlit run lloom.py
 ```
 
 ## Usage with OpenAI
@@ -27,8 +27,10 @@ LLAMA_API_URL=http://127.0.0.1:8080 streamlit run loom.py
 Launch the frontend with `OPENAI_API_KEY`
 
 ```
-OPENAI_API_KEY=sk-... streamlit run loom.py
+OPENAI_API_KEY=sk-... streamlit run lloom.py
 ```
+
+Model is currently hard-coded to `gpt-3.5-turbo`.
 
 # Parameters
 
@@ -40,6 +42,8 @@ OPENAI_API_KEY=sk-... streamlit run loom.py
 
 # Using
 
-Give the LLooM a starting prompt, or change the Story any time.
+Give the LLooM a starting prompt, or change the Story any time by directly editing in the top input area and pressing Ctrl+Enter.
 
-Note that you can edit the suggestions in-line before accepting them.
+Click a suggestion to accept it, or edit the suggestion (press Enter when done) in-line before accepting.
+
+Have fun!

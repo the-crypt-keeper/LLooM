@@ -4,6 +4,12 @@ import hashlib
 import requests
 import os
 
+STARTING_STORIES = [
+    "Once upon a time",
+    "The forest seemed darker then usual, but that did not bother Elis in the least.",
+    "In the age before man,"
+]
+
 def computeMD5hash(my_string):
     m = hashlib.md5()
     m.update(my_string.encode('utf-8'))
