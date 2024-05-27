@@ -94,13 +94,26 @@ def spawn_threads(prompt, depth, cutoff, multiplier, acc = 0.0):
 
 def main():
     st.set_page_config(layout='wide', page_title='The LLooM')
-    st.title("The LLooM")
-        
+    st.markdown("""
+            <style>
+                .block-container {
+                        padding-top: 2rem;
+                        padding-bottom: 0rem;
+                        padding-left: 3rem;
+                        padding-right: 3.5rem;
+                    }
+                .row-widget {
+                    padding-top: 0rem;
+                }
+            </style>
+            """, unsafe_allow_html=True)
+            
     if 'page' not in st.session_state:
         st.session_state.page = 0
         st.session_state.threads = None
     
     if st.session_state.page == 0:
+        st.title("The LLooM")
         config_cols = st.columns((1,1,1))
         depth = config_cols[0].number_input("Depth", min_value=1, max_value=10, value=6)
         cutoff = config_cols[1].number_input("Cutoff", min_value=0.0, max_value=1.0, value=0.2, step=0.01)
@@ -120,6 +133,8 @@ def main():
     else:
         left, right = st.columns((2,3))
         story_so_far = st.session_state.story_so_far
+        
+        left.title("The LLooM")
         
         new_story_so_far = left.text_area("Story so far", story_so_far, label_visibility='hidden', height=300)
         if left.button('Suggest Again'):
