@@ -6,6 +6,18 @@ The problem with straight greedy decoding is that due to the self-recursive natu
 
 Conceptually this idea is similar to beamsearching, tracking multiple candidates at once, but with a human in the loop and unlimited beams.
 
+# Screenshot
+
+![LLooM Screenshot](screenshot.png "LLooM Screenshot")
+
+# Using
+
+Give the LLooM a starting prompt, or change the Story any time by directly editing in the top input area and pressing Ctrl+Enter.
+
+Click ➡️ beside a suggestion to accept it, or edit the suggestion (press Enter when done) in-line before accepting.
+
+Have fun!
+
 # Launching
 
 ## Usage with llama.cpp
@@ -41,11 +53,3 @@ Model is currently hard-coded to `gpt-3.5-turbo`.
 `Cutoff` The minimum token propability (0.0 - 1.0) to spawn a new thread.
 
 `Multiplier` cutoff per token slope (1.0: fixed cutoff, <1.0 cutoff decreases with depth, >1.0 cutoff increases with depth)
-
-# Using
-
-Give the LLooM a starting prompt, or change the Story any time by directly editing in the top input area and pressing Ctrl+Enter.
-
-Click a suggestion to accept it, or edit the suggestion (press Enter when done) in-line before accepting.
-
-Have fun!
