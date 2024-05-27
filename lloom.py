@@ -3,6 +3,7 @@ import streamlit as st
 import hashlib
 import requests
 import os
+from viz import visualize_common_prefixes
 
 STARTING_STORIES = [
     "Once upon a time",
@@ -92,7 +93,7 @@ def spawn_threads(prompt, depth, cutoff, multiplier, acc = 0.0):
             yield (acc+probability, new_prompt)
 
 def main():
-    st.set_page_config(layout='centered', page_title='The LLooM')
+    st.set_page_config(layout='wide', page_title='The LLooM')
     st.title("The LLooM")
         
     if 'page' not in st.session_state:
@@ -117,10 +118,11 @@ def main():
             st.session_state.page = 1
             st.rerun()
     else:
+        left, right = st.columns((2,3))
         story_so_far = st.session_state.story_so_far
         
-        new_story_so_far = st.text_area("Story so far", story_so_far, label_visibility='hidden', height=300)
-        if st.button('Suggest Again'):
+        new_story_so_far = left.text_area("Story so far", story_so_far, label_visibility='hidden', height=300)
+        if left.button('Suggest Again'):
             story_so_far = new_story_so_far
             st.session_state.story_so_far = story_so_far
             st.session_state.threads = None
@@ -130,7 +132,7 @@ def main():
             with please_wait.status('Please wait..') as status:
                 threads = []
                 for thread in spawn_threads(story_so_far, depth, cutoff, multiplier):
-                    label = thread[1][len(story_so_far):]
+                    label = thread[1][len(story_so_far):]                    
                     status.update(label=label, state="running")
                     threads.append(thread)
                 status.update(label="Threading complete.", state="complete", expanded=False)
@@ -157,6 +159,10 @@ def main():
             
         threads = st.session_state.threads
         add_space = st.session_state.add_space
+        
+        labels = [ thread for prob, thread in threads ]
+        viz = visualize_common_prefixes(labels)
+        right.graphviz_chart(viz)
 
         controls = st.container()        
         buttons = st.container()
