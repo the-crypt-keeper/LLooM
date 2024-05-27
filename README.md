@@ -28,6 +28,8 @@ Click ➡️ beside a suggestion to accept it, or edit the suggestion (press Ent
 
 ## Usage with llama.cpp
 
+Download an appropriate quant for your system from [dolphin-2.9-llama3-70b-GGUF](https://huggingface.co/crusoeai/dolphin-2.9-llama3-70b-GGUF)
+
 First, launch a llama.cpp server with a good Llama3-70B finetune:
 
 ```
