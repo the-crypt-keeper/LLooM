@@ -193,7 +193,10 @@ def main():
         
         labels = [ thread for prob, thread in threads ]
         viz = visualize_common_prefixes(labels)
-        right.graphviz_chart(viz)
+        with right:
+            st.graphviz_chart(viz)
+            st.download_button('Download DOT Graph', viz.source, 'graph.dot', 'text/plain')
+            st.download_button('Download PNG', viz.pipe(format='png'), 'graph.png', 'image/png')               
 
         controls = st.container()        
         buttons = st.container()
