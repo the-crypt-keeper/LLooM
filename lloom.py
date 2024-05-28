@@ -6,7 +6,7 @@ import os
 from viz import visualize_common_prefixes
 
 STARTING_STORIES = [
-    "Once upon a time",
+    "Once upon a time,",
     "The forest seemed darker then usual, but that did not bother Elis in the least.",
     "In the age before man,"
 ]
@@ -62,7 +62,7 @@ def get_logprobs_llama(prompt, base_url):
 
     return [ LlamaPropability(prob['tok_str'], prob['prob']) for prob in probs]
 
-def spawn_threads(prompt, original_prompt, depth, cutoff, multiplier, acc = 0.0):
+def spawn_threads(prompt, original_prompt, depth, cutoff, multiplier, maxsplits, acc = 0.0):
 
     if os.getenv('LLAMA_API_URL') is not None:
         logprobs = get_logprobs_llama(prompt, os.getenv('LLAMA_API_URL'))
@@ -72,13 +72,17 @@ def spawn_threads(prompt, original_prompt, depth, cutoff, multiplier, acc = 0.0)
         raise Exception('Please set either OPENAI_API_KEY or LLAMA_API_URL')
 
     chosen = []
+    count = 0    
     
     for logprob_choice in logprobs:
         token = logprob_choice.token
         probability = logprob_choice.probability
         print('CHOICE:', token, probability)
         
-        if len(chosen) > 0 and probability < cutoff: break
+        if len(chosen) > 0 and probability < cutoff: break        
+        if maxsplits > 0 and count == maxsplits-1: break
+        
+        count += 1
         chosen.append(token)
         
         new_prompt = prompt + token
@@ -101,7 +105,7 @@ def spawn_threads(prompt, original_prompt, depth, cutoff, multiplier, acc = 0.0)
             early_finish = True
             
         if not early_finish:            
-            for final_thread in spawn_threads(new_prompt, original_prompt, depth - 1 if depth > 0 else -1, new_cutoff, multiplier, acc+probability):
+            for final_thread in spawn_threads(new_prompt, original_prompt, depth - 1 if depth > 0 else -1, new_cutoff, multiplier, maxsplits, acc+probability):
                 yield final_thread
 
 def main():
@@ -123,35 +127,30 @@ def main():
     if 'page' not in st.session_state:
         st.session_state.page = 0
         st.session_state.threads = None
-    
-    if st.session_state.page == 0:
-        st.title("The LLooM")
+
+    with st.expander('Configuration', expanded=False):
         config_cols = st.columns((1,1))
-        config_cols[0].markdown('Stop conditions')
+        config_cols[0].markdown('_Stop conditions_')
         story_depth = config_cols[0].checkbox("Auto-depth (runs until end of sentences - might take a while!)", value=False)
         depth = config_cols[0].number_input("Depth", min_value=1, max_value=10, value=6, disabled=story_depth)
         
-        config_cols[1].markdown('Probability')
-        cutoff = config_cols[1].number_input("Cutoff", help="Minimum propability of a token to have it spawn a new suggestion beam", min_value=0.0, max_value=1.0, value=0.2, step=0.01)
+        config_cols[1].markdown('_Probability_\n\nLower the Cutoff to get more variety (at the expense of quality and speed), raise Cutoff for a smaller number of better suggestions.')
+        cutoff = config_cols[1].number_input("Cutoff", help="Minimum propability of a token to have it split a new suggestion beam", min_value=0.0, max_value=1.0, value=0.2, step=0.01)
         multiplier = config_cols[1].number_input("Multiplier", help="The cutoff is scaled by Multiplier each time a new token is generated", min_value=0.0, max_value=2.0, value=1.0, step=0.1)
+        maxsplits = config_cols[1].number_input("Split Limit", help="The maximum number of splits from a single source token, raise to get more variety.", min_value=0, max_value=10, value=3)
         
-        st.session_state.config = (depth, cutoff, multiplier, story_depth)
-    else:
-        (depth, cutoff, multiplier, story_depth) = st.session_state.config   
+    left, right = st.columns((2,3))
+    left.title("The LLooM")
         
     if st.session_state.page == 0:
-        start_prompt = st.selectbox("Start Prompt", STARTING_STORIES)
-        # text_input("Start Prompt", "In the age before man,", label_visibility='hidden')    
+        st.write('Open the Configuration panel above to adjust settings, Auto-depth mode is particularly useful at the expense of longer generation speeds. You will be able to change settings at any point and regenerate suggestions.\n\nThe starting prompts below are just suggestions, once inside the playground you can fully edit the prompt.')
+        start_prompt = st.selectbox("Start Prompt", STARTING_STORIES, index=1)
         if st.button("Start"):
             st.session_state.story_so_far = start_prompt
             st.session_state.page = 1
             st.rerun()
     else:
-        left, right = st.columns((2,3))
-        story_so_far = st.session_state.story_so_far
-        
-        left.title("The LLooM")
-        
+        story_so_far = st.session_state.story_so_far        
         new_story_so_far = left.text_area("Story so far", story_so_far, label_visibility='hidden', height=300)
         if left.button('Suggest Again'):
             story_so_far = new_story_so_far
@@ -160,13 +159,13 @@ def main():
         
         if st.session_state.threads == None:
             please_wait = st.empty()
-            with please_wait.status('Please wait..') as status:
+            with please_wait.status('Searching for suggestions, please wait..') as status:
                 threads = []
-                for thread in spawn_threads(story_so_far, story_so_far, -1 if story_depth else depth, cutoff, multiplier):
+                for thread in spawn_threads(story_so_far, story_so_far, -1 if story_depth else depth, cutoff, multiplier, maxsplits):
                     label = thread[1][len(story_so_far):]                    
                     status.update(label=label, state="running")
                     threads.append(thread)
-                status.update(label="Threading complete.", state="complete", expanded=False)
+                status.update(label="Search complete.", state="complete", expanded=False)
             please_wait.write('')
             
             sorted_threads = sorted(threads, key=lambda x: x[0], reverse=True)

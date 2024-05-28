@@ -57,10 +57,22 @@ OPENAI_API_KEY=sk-... streamlit run lloom.py
 
 Model is currently hard-coded to `gpt-3.5-turbo`.
 
-# Parameters
+# Configuration
+
+You can open the Configuration dropdown at the top at any time to adjust parameters.
+
+![LLooM Screenshot](config.png "LLooM Screenshot")
+
+## Stop Conditions
 
 `Depth` How many tokens to generate per suggestion beam.
+
+`Auto-Depth` Terminate suggestion beams on "." or "," instead of a fixed token length
+
+## Probabilities
 
 `Cutoff` The minimum token propability (0.0 - 1.0) to spawn a new thread.
 
 `Multiplier` cutoff per token slope (1.0: fixed cutoff, <1.0 cutoff decreases with depth, >1.0 cutoff increases with depth)
+
+`Split Limit` the maximum number of times a suggestion beam can split (analogous to beamsearch with top-k)
