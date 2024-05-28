@@ -30,6 +30,9 @@ Click ➡️ beside a suggestion to accept it, or edit the suggestion (press Ent
 
 Download an appropriate quant for your system from [dolphin-2.9-llama3-70b-GGUF](https://huggingface.co/crusoeai/dolphin-2.9-llama3-70b-GGUF)
 
+| :exclamation:  LLooM makes a large number of network calls and is latency sensitive, make sure the llama.cpp server is running on the same LAN as the frontend to avoid degraded performance  |
+|-----------------------------------------|
+
 First, launch a llama.cpp server with a good Llama3-70B finetune:
 
 ```
