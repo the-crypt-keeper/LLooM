@@ -30,18 +30,20 @@ Click ➡️ beside a suggestion to accept it, or edit the suggestion (press Ent
 
 Download an appropriate quant for your system from [dolphin-2.9-llama3-70b-GGUF](https://huggingface.co/crusoeai/dolphin-2.9-llama3-70b-GGUF)
 
-| :exclamation:  LLooM makes a large number of network calls and is latency sensitive, make sure the llama.cpp server is running on the same LAN as the frontend to avoid degraded performance  |
+Launch a llama.cpp server with a good Llama3-70B finetune:
+
+```
+./server -m ~/models/dolphin-2.9-llama3-70b.Q4_K_M.gguf -ngl 99 -sm row --host 0.0.0.0 -c 8192 --log-format text
+```
+
+| :exclamation: Note that you cannot use -fa as this results in all the logits being `null` and its strongly discouraged to launch with any kind of parallelism because this both reduces available context size and seems to break the KV caching so performance suffers.  |
 |-----------------------------------------|
 
-First, launch a llama.cpp server with a good Llama3-70B finetune:
-
-```
-./server -m ~/models/dolphin-2.9-llama3-70b.Q4_K_M.gguf -ngl 99 -sm row --host 0.0.0.0 -np 2 -c 8192 --log-format text
-```
-
-Note that you cannot use -fa as this results in all the logits being `null`.
 
 Then launch the frontend with `LLAMA_API_URL` set to the host and port of the server:
+
+| :exclamation:  LLooM makes a large number of network calls and is latency sensitive, make sure the llama.cpp server is running on the same machine or LAN as the frontend to avoid degraded performance.  If you cannot avoid going over a high-latency, connection setting `LLAMA_PIPELINE_REQUESTS=2` should improve performance. |
+|-----------------------------------------|
 
 ```
 LLAMA_API_URL=http://127.0.0.1:8080 streamlit run lloom.py
