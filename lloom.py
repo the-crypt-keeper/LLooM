@@ -81,7 +81,7 @@ def main():
                     label = thread[1][len(story_so_far):]                    
                     status.update(label=label, state="running")
                     threads.append(thread)
-                    if len(threads) > maxsuggestions:
+                    if len(threads) >= maxsuggestions:
                         break
                 delta = time.time() - t0
                 status.update(label=f"Search completed, found {len(threads)} suggestion in {delta:.2f}s.", state="complete", expanded=False)
