@@ -41,14 +41,14 @@ def main():
         st.session_state.threads = None
         
     logo, config = st.columns((1,5))
-    logo.markdown("### The LLooM")    
+    logo.markdown("### The LLooM :green[v0.2]")    
 
     with config.expander('Configuration', expanded=False):
         config_cols = st.columns((1,1))
         config_cols[0].markdown('_Stop conditions_')
         story_depth = config_cols[0].checkbox("Auto-Stop (early terminate if a period or comma is encountered)", value=True)
-        depth = config_cols[0].number_input("Maximum Depth", min_value=1, max_value=50, value=12, help="Stop when a sugguestion gets this long")
-        maxsuggestions = config_cols[0].number_input("Maximum Suggestions", min_value=10, max_value=200, value=50, help="Stop when the number of suggestions hits this limit")
+        depth = config_cols[0].number_input("Maximum Depth", min_value=1, max_value=50, value=12, help="Terminate a sugguestion when it gets this long")
+        maxsuggestions = config_cols[0].number_input("Beam Limit", min_value=5, max_value=100, value=25, help="Stop spawning new beams when the number of suggestions hits this limit")
         
         config_cols[1].markdown('_Split conditions_\n\nLower the Cutoff to get more variety (at the expense of quality and speed), raise Cutoff for a smaller number of better suggestions.')
         cutoff = config_cols[1].number_input("Cutoff", help="Minimum propability of a token to have it split a new suggestion beam", min_value=0.0, max_value=1.0, value=0.2, step=0.01)
@@ -77,12 +77,11 @@ def main():
             t0 = time.time()
             with please_wait.status('Searching for suggestions, please wait..') as status:
                 threads = []
-                for thread in parallel_lloom_search(story_so_far, depth, ['.',','] if story_depth else [], cutoff, multiplier, maxsplits, LLAMA_PIPELINE_REQUESTS):
+                for thread in parallel_lloom_search(story_so_far, depth, maxsuggestions, ['.',','] if story_depth else [], cutoff, multiplier, maxsplits, LLAMA_PIPELINE_REQUESTS):
                     label = thread[1][len(story_so_far):]                    
                     status.update(label=label, state="running")
                     threads.append(thread)
-                    if len(threads) >= maxsuggestions:
-                        break
+
                 delta = time.time() - t0
                 status.update(label=f"Search completed, found {len(threads)} suggestion in {delta:.2f}s.", state="complete", expanded=False)
             

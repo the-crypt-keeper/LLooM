@@ -51,7 +51,7 @@ def get_logprobs_llama(prompt, base_url):
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-def parallel_get_logprobs(prompt, depth, cutoff, acc):
+def parallel_get_logprobs(prompt, acc):
     # Choose which API to use based on environment variables
     if os.getenv('LLAMA_API_URL') is not None:
         api_function = "llama"
@@ -65,24 +65,28 @@ def parallel_get_logprobs(prompt, depth, cutoff, acc):
     elif api_function == "openai":
         logprobs = get_logprobs_openai(prompt)
     
-    return (prompt, depth, cutoff, acc, logprobs)
+    return (prompt, acc, logprobs)
 
-def parallel_lloom_search(initial_prompt, max_depth, stop_tokens, initial_cutoff, multiplier, maxsplits, parallelism=2):
+def parallel_lloom_search(initial_prompt, max_depth, max_beams, stop_tokens, initial_cutoff, multiplier, maxsplits, parallelism=2):
     
-    tasks = [(initial_prompt, max_depth, initial_cutoff, 0.0)]
+    tasks = [(initial_prompt, 0.0)]
+    cutoff = initial_cutoff
+    depth = max_depth
+    num_beams = 0
 
     with ThreadPoolExecutor(max_workers=parallelism) as executor:
         while tasks:
+            # spawn futures
             futures = []
             for task in tasks:
-                print("spawn", task)
+                print("spawning depth:", depth ,"task:", task)
                 futures.append(executor.submit(parallel_get_logprobs, *task))
             tasks = []
 
+            # process futures as they come in
             for future in as_completed(futures):
                 res = future.result()
-                print("done", res)
-                (prompt, depth, cutoff, acc, logprobs) = res
+                (prompt, acc, logprobs) = res
 
                 count = 0
                 for logprob_choice in logprobs:
@@ -90,16 +94,16 @@ def parallel_lloom_search(initial_prompt, max_depth, stop_tokens, initial_cutoff
                     probability = logprob_choice.probability
 
                     if count > 0 and probability < cutoff: break        
-                    if maxsplits > 0 and count == maxsplits-1: break
+                    if maxsplits > 0 and count == maxsplits: break
 
                     count += 1
 
                     new_prompt = prompt + token
-                    new_cutoff = cutoff * multiplier
                     early_finish = False
 
-                    if depth == 0:
+                    if depth == 0 or (max_beams > 0 and num_beams >= max_beams):
                         yield (acc + probability, new_prompt)
+                        num_beams += 1
                         early_finish = True
                     else:
                         new_tokens = new_prompt[len(initial_prompt):]
@@ -107,9 +111,13 @@ def parallel_lloom_search(initial_prompt, max_depth, stop_tokens, initial_cutoff
                             if (not early_finish) and (st in new_tokens):
                                 trimmed_prompt = initial_prompt + new_tokens[:new_tokens.find(st)+1]
                                 yield (acc + probability, trimmed_prompt)
-                                early_finish = True                        
+                                num_beams += 1                                
+                                early_finish = True
 
                     if not early_finish:
-                        new_task =(new_prompt, depth - 1, new_cutoff, acc + probability)
-                        print("new_task", new_task)
+                        new_task =(new_prompt, acc + probability)
                         tasks.append(new_task)
+            
+            # adjust for next cycle            
+            cutoff = cutoff * multiplier
+            depth = depth - 1
