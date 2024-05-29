@@ -72,7 +72,7 @@ def parallel_lloom_search(initial_prompt, max_depth, max_beams, stop_tokens, ini
     tasks = [(initial_prompt, 0.0)]
     cutoff = initial_cutoff
     depth = max_depth
-    num_beams = 0
+    done_beams = 0
 
     with ThreadPoolExecutor(max_workers=parallelism) as executor:
         while tasks:
@@ -81,7 +81,10 @@ def parallel_lloom_search(initial_prompt, max_depth, max_beams, stop_tokens, ini
             for task in tasks:
                 print("spawning depth:", depth ,"task:", task)
                 futures.append(executor.submit(parallel_get_logprobs, *task))
+                
+            total_futures = len(tasks)
             tasks = []
+            done_futures = 0
 
             # process futures as they come in
             for future in as_completed(futures):
@@ -101,9 +104,8 @@ def parallel_lloom_search(initial_prompt, max_depth, max_beams, stop_tokens, ini
                     new_prompt = prompt + token
                     early_finish = False
 
-                    if depth == 0 or (max_beams > 0 and num_beams >= max_beams):
+                    if depth == 0 or ((max_beams > 0) and (done_beams+total_futures-done_futures >= max_beams)):
                         yield (acc + probability, new_prompt)
-                        num_beams += 1
                         early_finish = True
                     else:
                         new_tokens = new_prompt[len(initial_prompt):]
@@ -111,12 +113,15 @@ def parallel_lloom_search(initial_prompt, max_depth, max_beams, stop_tokens, ini
                             if (not early_finish) and (st in new_tokens):
                                 trimmed_prompt = initial_prompt + new_tokens[:new_tokens.find(st)+1]
                                 yield (acc + probability, trimmed_prompt)
-                                num_beams += 1                                
                                 early_finish = True
 
                     if not early_finish:
                         new_task =(new_prompt, acc + probability)
                         tasks.append(new_task)
+                    else:
+                        done_beams += 1
+                        
+                done_futures += 1
             
             # adjust for next cycle            
             cutoff = cutoff * multiplier
