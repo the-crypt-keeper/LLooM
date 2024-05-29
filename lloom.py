@@ -39,8 +39,11 @@ def main():
     if 'page' not in st.session_state:
         st.session_state.page = 0
         st.session_state.threads = None
+        
+    logo, config = st.columns((1,5))
+    logo.markdown("### The LLooM")    
 
-    with st.expander('Configuration', expanded=False):
+    with config.expander('Configuration', expanded=False):
         config_cols = st.columns((1,1))
         config_cols[0].markdown('_Stop conditions_')
         story_depth = config_cols[0].checkbox("Auto-Stop (early terminate if a period or comma is encountered)", value=True)
@@ -53,8 +56,7 @@ def main():
         maxsplits = config_cols[1].number_input("Split Limit", help="The maximum number of splits from a single source token, raise to get more variety.", min_value=0, max_value=10, value=3)
         
     left, right = st.columns((2,3))
-    left.title("The LLooM")
-        
+       
     if st.session_state.page == 0:
         st.write('Open the Configuration panel above to adjust settings, Auto-depth mode is particularly useful at the expense of longer generation speeds. You will be able to change settings at any point and regenerate suggestions.\n\nThe starting prompts below are just suggestions, once inside the playground you can fully edit the prompt.')
         start_prompt = st.selectbox("Start Prompt", STARTING_STORIES, index=1)
