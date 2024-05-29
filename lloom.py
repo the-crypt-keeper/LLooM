@@ -47,7 +47,7 @@ def main():
         depth = config_cols[0].number_input("Maximum Depth", min_value=1, max_value=50, value=12, help="Stop when a sugguestion gets this long")
         maxsuggestions = config_cols[0].number_input("Maximum Suggestions", min_value=10, max_value=200, value=50, help="Stop when the number of suggestions hits this limit")
         
-        config_cols[1].markdown('_Probability_\n\nLower the Cutoff to get more variety (at the expense of quality and speed), raise Cutoff for a smaller number of better suggestions.')
+        config_cols[1].markdown('_Split conditions_\n\nLower the Cutoff to get more variety (at the expense of quality and speed), raise Cutoff for a smaller number of better suggestions.')
         cutoff = config_cols[1].number_input("Cutoff", help="Minimum propability of a token to have it split a new suggestion beam", min_value=0.0, max_value=1.0, value=0.2, step=0.01)
         multiplier = config_cols[1].number_input("Multiplier", help="The cutoff is scaled by Multiplier each time a new token is generated", min_value=0.0, max_value=2.0, value=1.0, step=0.1)
         maxsplits = config_cols[1].number_input("Split Limit", help="The maximum number of splits from a single source token, raise to get more variety.", min_value=0, max_value=10, value=3)

@@ -65,13 +65,17 @@ You can open the Configuration dropdown at the top at any time to adjust paramet
 
 ![LLooM Screenshot](config.png "LLooM Screenshot")
 
+The parameters are grouped into two sections: when to stop, and when to split.
+
 ## Stop Conditions
 
-`Depth` How many tokens to generate per suggestion beam.
+`Auto-Stop` Early-terminate suggestion beams when a "." or "," character in encountered.
 
-`Auto-Depth` Terminate suggestion beams on "." or "," instead of a fixed token length
+`Max Depth` The maximum number of tokens a suggestion beam can have. Note that if you disable the Auto-Stop condition, then all beams will have exactly this number of tokens.
 
-## Probabilities
+`Maximum Suggestions` The maximum number of completed suggestion beams to return (this can be really useful to limit run-time if the model is slow).
+
+## Split Conditions
 
 `Cutoff` The minimum token propability (0.0 - 1.0) to spawn a new thread.
 
