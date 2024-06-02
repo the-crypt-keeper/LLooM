@@ -49,6 +49,18 @@ Then launch the frontend with `VLLM_API_URL` set to the host and port of the ser
 VLLM_API_URL=http://127.0.0.1:8000 streamlit run lloom.py
 ```
 
+### If you 48GB VRAM and want to run 70B-GPTq model
+
+Add `--enforce-eager --max-model-len 2048 --gpu_memory_utilization 1.0` to vllm server command line.
+
+### If you have P100
+
+Use [vllm-pascal](https://github.com/cduk/vllm-pascal)
+
+`export VLLM_ATTENTION_BACKEND=XFORMERS` to force xformers.
+
+Add `--dtype half` to vllm server command line.
+
 ## Usage with llama.cpp
 
 Download an appropriate quant for your system from [dolphin-2.9-llama3-70b-GGUF](https://huggingface.co/crusoeai/dolphin-2.9-llama3-70b-GGUF)
