@@ -32,10 +32,12 @@ Click ➡️ beside a suggestion to accept it, or edit the suggestion (press Ent
 
 ## Usage with vLLM
 
+Download an appropriate GPTQ or AWQ quant for your system such as (MaziyarPanahi/Meta-Llama-3-70B-Instruct-GPTQ)[https://huggingface.co/MaziyarPanahi/Meta-Llama-3-70B-Instruct-GPTQ].
+
 Launch a vllm openAI server:
 
 ```
-python3 -m vllm.entrypoints.openai.api_server --model ~/models/MaziyarPanahi-Meta-Llama-3-8B-Instruct-GPTQ/
+python3 -m vllm.entrypoints.openai.api_server --model ~/models/MaziyarPanahi-Meta-Llama-3-70B-Instruct-GPTQ/
 ```
 
 Rembmer to add `--tensor-parallel-size <N>` if you have multiple GPUs.
