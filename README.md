@@ -32,7 +32,7 @@ Click ➡️ beside a suggestion to accept it, or edit the suggestion (press Ent
 
 ## Usage with vLLM
 
-Download an appropriate GPTQ or AWQ quant for your system such as (MaziyarPanahi/Meta-Llama-3-70B-Instruct-GPTQ)[https://huggingface.co/MaziyarPanahi/Meta-Llama-3-70B-Instruct-GPTQ].
+Download an appropriate GPTQ or AWQ quant for your system such as [MaziyarPanahi/Meta-Llama-3-70B-Instruct-GPTQ](https://huggingface.co/MaziyarPanahi/Meta-Llama-3-70B-Instruct-GPTQ).
 
 Launch a vllm openAI server:
 
