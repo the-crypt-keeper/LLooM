@@ -41,7 +41,7 @@ def main():
         st.session_state.threads = None
         
     logo, config = st.columns((1,5))
-    logo.markdown("### The LLooM :green[v0.2]")    
+    logo.markdown("### The LLooM :green[v0.3]")
 
     with config.expander('Configuration', expanded=False):
         config_cols = st.columns((1,1))

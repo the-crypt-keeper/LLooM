@@ -6,6 +6,10 @@ The problem with straight greedy decoding is that due to the self-recursive natu
 
 Conceptually this idea is similar to beamsearching, tracking multiple candidates at once, but with a human in the loop and unlimited beams.
 
+# News
+
+*06/02* Released **v0.3** with [vLLM](https://github.com/vllm-project/vllm) support and a quality of life improvement: if a suggestion beam starts with a stop token, it will be allowed to continue.
+
 # Screenshot
 
 ![LLooM Screenshot](screenshot.png "LLooM Screenshot")
@@ -25,6 +29,25 @@ Click ➡️ beside a suggestion to accept it, or edit the suggestion (press Ent
 `pip3 install requests graphviz streamlit`
 
 `sudo apt-get install -y graphviz`
+
+## Usage with vLLM
+
+Launch a vllm openAI server:
+
+```
+python3 -m vllm.entrypoints.openai.api_server --model ~/models/MaziyarPanahi-Meta-Llama-3-8B-Instruct-GPTQ/
+```
+
+Rembmer to add `--tensor-parallel-size <N>` if you have multiple GPUs.
+
+Then launch the frontend with `VLLM_API_URL` set to the host and port of the server:
+
+| :exclamation:  LLooM makes a large number of network calls and is latency sensitive, make sure the vLLM server is running on the same machine or LAN as the frontend to avoid degraded performance.  If you cannot avoid going over a high-latency, connection setting `LLAMA_PIPELINE_REQUESTS=2` should improve performance. |
+|-----------------------------------------|
+
+```
+VLLM_API_URL=http://127.0.0.1:8000 streamlit run lloom.py
+```
 
 ## Usage with llama.cpp
 

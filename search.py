@@ -25,14 +25,14 @@ def get_logprobs_openai(prompt, model="gpt-3.5-turbo"):
         
     return top_logprobs
 
+class SimpleProbability:
+    def __init__(self, token, probability):
+        self.token = token
+        self.probability = probability
+
 def get_logprobs_llama(prompt, base_url):
     import requests
-    
-    class LlamaPropability:
-        def __init__(self, token, probability):
-            self.token = token
-            self.probability = probability
-   
+       
     url = base_url+'/completion'
     payload = { 'prompt': prompt,
             'cache_prompt': True,
@@ -47,23 +47,45 @@ def get_logprobs_llama(prompt, base_url):
     probs = response.json()['completion_probabilities'][0]['probs']
     print(probs)
 
-    return [ LlamaPropability(prob['tok_str'], prob['prob']) for prob in probs]
+    return [ SimpleProbability(prob['tok_str'], prob['prob']) for prob in probs]
+
+vllm_model_name = None
+def get_logprobs_vllm(prompt, base_url):
+    import requests
+    
+    global vllm_model_name
+    if vllm_model_name is None:
+        models = requests.get(base_url+'/v1/models').json()
+        vllm_model_name = models['data'][0]['id']
+        print('VLLM model name:', vllm_model_name)
+       
+    url = base_url+'/v1/completions'
+    payload = {
+        "prompt": prompt,
+        "n": 1,
+        "temperature": 0.0,
+        "max_tokens": 1,
+        "stream": False,
+        "logprobs": 5,
+        "model": vllm_model_name
+    }
+
+    response = requests.post(url, json=payload)
+    probs = response.json()['choices'][0]['logprobs']['top_logprobs'][0]
+    return [ SimpleProbability(k,np.exp(v)) for k,v in probs.items()]
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def parallel_get_logprobs(prompt, acc):
     # Choose which API to use based on environment variables
     if os.getenv('LLAMA_API_URL') is not None:
-        api_function = "llama"
-    elif os.getenv('OPENAI_API_KEY') is not None:
-        api_function = "openai"
-    else:
-        raise Exception('Please set either OPENAI_API_KEY or LLAMA_API_URL')
-
-    if api_function == "llama":
         logprobs =  get_logprobs_llama(prompt, os.getenv('LLAMA_API_URL'))
-    elif api_function == "openai":
+    elif os.getenv('VLLM_API_URL') is not None:
+        logprobs =  get_logprobs_vllm(prompt, os.getenv('VLLM_API_URL'))
+    elif os.getenv('OPENAI_API_KEY') is not None:
         logprobs = get_logprobs_openai(prompt)
+    else:
+        raise Exception('Please set either OPENAI_API_KEY or LLAMA_API_URL')       
     
     return (prompt, acc, logprobs)
 
@@ -109,8 +131,14 @@ def parallel_lloom_search(initial_prompt, max_depth, max_beams, stop_tokens, ini
                         early_finish = True
                     else:
                         new_tokens = new_prompt[len(initial_prompt):]
+                        stop_search_tokens = new_tokens
+                        
                         for st in stop_tokens:
-                            if (not early_finish) and (st in new_tokens):
+                            # starting with a stop token is OK, keep searching until there's some meat
+                            if stop_search_tokens[0:len(st)] == st: 
+                                stop_search_tokens = stop_search_tokens[len(st):]
+
+                            if (not early_finish) and (st in stop_search_tokens):
                                 trimmed_prompt = initial_prompt + new_tokens[:new_tokens.find(st)+1]
                                 yield (acc + probability, trimmed_prompt)
                                 early_finish = True
