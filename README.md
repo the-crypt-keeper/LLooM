@@ -50,7 +50,7 @@ LLAMA_PIPELINE_REQUESTS=6 VLLM_API_URL=http://127.0.0.1:8000 streamlit run lloom
 
 Tweak `LLAMA_PIPELINE_REQUESTS` up until it stops being faster (if you have powerful GPUs).
 
-### If you 48GB VRAM and want to run 70B-GPTq model
+### If you 48GB VRAM and want to Fit Llama3-70B-GPTQ model
 
 Add `--enforce-eager --max-model-len 2048 --gpu_memory_utilization 1.0` to vllm server command line.
 
