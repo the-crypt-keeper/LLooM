@@ -75,15 +75,19 @@ def main():
         if st.session_state.threads == None:
             please_wait = st.empty()
             t0 = time.time()
+            tokens = 0
+            
             with please_wait.status('Searching for suggestions, please wait..') as status:
                 threads = []
                 for thread in parallel_lloom_search(story_so_far, depth, maxsuggestions, ['.',','] if story_depth else [], cutoff, multiplier, maxsplits, LLAMA_PIPELINE_REQUESTS):
-                    label = thread[1][len(story_so_far):]                    
+                    label = thread[1][len(story_so_far):]
                     status.update(label=label, state="running")
                     threads.append(thread)
+                    tokens += thread[2]
 
                 delta = time.time() - t0
-                status.update(label=f"Search completed, found {len(threads)} suggestion in {delta:.2f}s.", state="complete", expanded=False)
+                tps = tokens/delta
+                status.update(label=f"Search completed, found {len(threads)} suggestion in {delta:.2f}s @ {tps:.2f} tokens/sec", state="complete", expanded=False)
             
             sorted_threads = sorted(threads, key=lambda x: x[0], reverse=True)
             
@@ -91,7 +95,7 @@ def main():
             dedupe = {}
             good_threads = []
             add_space = False
-            for prob, thread in sorted_threads:
+            for prob, thread, depth in sorted_threads:
                 new_tokens = thread[len(story_so_far):]
                 if new_tokens[0] == ' ': 
                     new_tokens = new_tokens[1:]

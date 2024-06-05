@@ -127,7 +127,7 @@ def parallel_lloom_search(initial_prompt, max_depth, max_beams, stop_tokens, ini
                     early_finish = False
 
                     if depth == 0 or ((max_beams > 0) and (done_beams+total_futures-done_futures >= max_beams)):
-                        yield (acc + probability, new_prompt)
+                        yield (acc + probability, new_prompt, max_depth - depth)
                         early_finish = True
                     else:
                         new_tokens = new_prompt[len(initial_prompt):]
@@ -140,7 +140,7 @@ def parallel_lloom_search(initial_prompt, max_depth, max_beams, stop_tokens, ini
 
                             if (not early_finish) and (st in stop_search_tokens):
                                 trimmed_prompt = initial_prompt + new_tokens[:new_tokens.find(st)+1]
-                                yield (acc + probability, trimmed_prompt)
+                                yield (acc + probability, trimmed_prompt, max_depth - depth)
                                 early_finish = True
 
                     if not early_finish:
