@@ -108,6 +108,12 @@ def main():
             st.session_state.threads = good_threads
             st.session_state.add_space = add_space
             
+            # if there is only one option - take it.
+            if len(good_threads) == 1:
+                st.session_state.story_so_far += (" " if add_space else "") + good_threads[0][1]
+                st.session_state.threads = None
+                st.rerun()  
+            
         threads = st.session_state.threads
         add_space = st.session_state.add_space
         
