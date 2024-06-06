@@ -45,7 +45,7 @@ def get_logprobs_llama(prompt, base_url):
     
     response = requests.post(url, json=payload)
     probs = response.json()['completion_probabilities'][0]['probs']
-    print(probs)
+    # print(probs)
 
     return [ SimpleProbability(prob['tok_str'], prob['prob']) for prob in probs]
 
@@ -77,17 +77,25 @@ def get_logprobs_vllm(prompt, base_url):
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def parallel_get_logprobs(prompt, acc):
-    # Choose which API to use based on environment variables
+    logprobs = []
     if os.getenv('LLAMA_API_URL') is not None:
-        logprobs =  get_logprobs_llama(prompt, os.getenv('LLAMA_API_URL'))
-    elif os.getenv('VLLM_API_URL') is not None:
-        logprobs =  get_logprobs_vllm(prompt, os.getenv('VLLM_API_URL'))
-    elif os.getenv('OPENAI_API_KEY') is not None:
-        logprobs = get_logprobs_openai(prompt)
-    else:
-        raise Exception('Please set either OPENAI_API_KEY or LLAMA_API_URL')       
-    
-    return (prompt, acc, logprobs)
+        logprobs += get_logprobs_llama(prompt, os.getenv('LLAMA_API_URL'))
+    if os.getenv('VLLM_API_URL') is not None:
+        logprobs += get_logprobs_vllm(prompt, os.getenv('VLLM_API_URL'))
+    # elif os.getenv('OPENAI_API_KEY') is not None:
+    #     logprobs = get_logprobs_openai(prompt)
+    # else:
+    #     raise Exception('Please set either OPENAI_API_KEY or LLAMA_API_URL')       
+
+    merged_logprobs = {}
+    for prob in logprobs:
+        if merged_logprobs.get(prob.token) is None:
+            merged_logprobs[prob.token] = 0
+        merged_logprobs[prob.token] += prob.probability
+        
+    new_logprobs = [SimpleProbability(k,v) for k,v in merged_logprobs.items()]
+        
+    return (prompt, acc, new_logprobs)
 
 def parallel_lloom_search(initial_prompt, max_depth, max_beams, stop_tokens, initial_cutoff, multiplier, maxsplits, parallelism=2):
     

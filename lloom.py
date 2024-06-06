@@ -56,7 +56,8 @@ def main():
         maxsplits = config_cols[1].number_input("Split Limit", help="The maximum number of splits from a single source token, raise to get more variety.", min_value=0, max_value=10, value=3)
         
     left, right = st.columns((2,3))
-       
+    please_wait = right.empty()
+    
     if st.session_state.page == 0:
         st.write('Open the Configuration panel above to adjust settings, Auto-depth mode is particularly useful at the expense of longer generation speeds. You will be able to change settings at any point and regenerate suggestions.\n\nThe starting prompts below are just suggestions, once inside the playground you can fully edit the prompt.')
         start_prompt = st.selectbox("Start Prompt", STARTING_STORIES, index=1)
@@ -73,7 +74,6 @@ def main():
             st.session_state.threads = None
         
         if st.session_state.threads == None:
-            please_wait = st.empty()
             t0 = time.time()
             tokens = 0
             
@@ -117,13 +117,15 @@ def main():
         threads = st.session_state.threads
         add_space = st.session_state.add_space
         
-        labels = [ thread for prob, thread in threads ]
-        viz = visualize_common_prefixes(labels)
+        labels = [ thread for prob, thread in threads ]        
         with right:
-            st.graphviz_chart(viz)
-            st.download_button('Download DOT Graph', viz.source, 'graph.dot', 'text/plain')
-            st.download_button('Download PNG', viz.pipe(format='png'), 'graph.png', 'image/png')               
-
+            control_cols = st.columns((1,1,1))
+            level_merge = control_cols[0].number_input('Level Merge', min_value=1, max_value=8, value=2)
+            viz = visualize_common_prefixes(labels, level_merge)
+            st.graphviz_chart(viz)            
+            control_cols[1].download_button('Download DOT Graph', viz.source, 'graph.dot', 'text/plain')
+            control_cols[2].download_button('Download PNG', viz.pipe(format='png'), 'graph.png', 'image/png')
+            
         controls = st.container()        
         buttons = st.container()
         
