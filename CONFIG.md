@@ -1,3 +1,13 @@
+# Enviroment Variables
+
+## LLAMA_PIPELINE_REQUESTS
+
+The number of requests to make in parallel.
+
+:exclamation:  LLooM makes a large number of network calls and is latency sensitive, make sure the LLM server is running on the same machine or LAN as the frontend to avoid degraded performance.
+
+If you cannot avoid going over a high-latency, connection setting `LLAMA_PIPELINE_REQUESTS=2` should improve performance.
+
 # Configuration File Syntax
 
 The following LLM API providers have been tested to work as logit sources:
