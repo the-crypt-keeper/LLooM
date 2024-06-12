@@ -1,5 +1,4 @@
 import numpy as np
-import os
 
 openai_client = None
 def get_logprobs_openai(prompt, model="gpt-3.5-turbo"):
@@ -76,16 +75,9 @@ def get_logprobs_vllm(prompt, base_url):
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-def parallel_get_logprobs(prompt, acc):
+def parallel_get_logprobs(llms, prompt, acc):
     logprobs = []
-    if os.getenv('LLAMA_API_URL') is not None:
-        logprobs += get_logprobs_llama(prompt, os.getenv('LLAMA_API_URL'))
-    if os.getenv('VLLM_API_URL') is not None:
-        logprobs += get_logprobs_vllm(prompt, os.getenv('VLLM_API_URL'))
-    # elif os.getenv('OPENAI_API_KEY') is not None:
-    #     logprobs = get_logprobs_openai(prompt)
-    # else:
-    #     raise Exception('Please set either OPENAI_API_KEY or LLAMA_API_URL')       
+    for llm in llms: logprobs += llm['get_logprobs'](prompt, llm)
 
     merged_logprobs = {}
     for prob in logprobs:
@@ -94,10 +86,9 @@ def parallel_get_logprobs(prompt, acc):
         merged_logprobs[prob.token] += prob.probability
         
     new_logprobs = [SimpleProbability(k,v) for k,v in merged_logprobs.items()]
-        
     return (prompt, acc, new_logprobs)
 
-def parallel_lloom_search(initial_prompt, max_depth, max_beams, stop_tokens, initial_cutoff, multiplier, maxsplits, parallelism=2):
+def parallel_lloom_search(llms, initial_prompt, max_depth, max_beams, stop_tokens, initial_cutoff, multiplier, maxsplits, parallelism=2):
     
     tasks = [(initial_prompt, 0.0)]
     cutoff = initial_cutoff
@@ -110,7 +101,7 @@ def parallel_lloom_search(initial_prompt, max_depth, max_beams, stop_tokens, ini
             futures = []
             for task in tasks:
                 print("spawning depth:", depth ,"task:", task)
-                futures.append(executor.submit(parallel_get_logprobs, *task))
+                futures.append(executor.submit(parallel_get_logprobs, llms, *task))
                 
             total_futures = len(tasks)
             tasks = []
@@ -152,7 +143,7 @@ def parallel_lloom_search(initial_prompt, max_depth, max_beams, stop_tokens, ini
                                 early_finish = True
 
                     if not early_finish:
-                        new_task =(new_prompt, acc + probability)
+                        new_task = (new_prompt, acc + probability)
                         tasks.append(new_task)
                     else:
                         done_beams += 1

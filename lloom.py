@@ -2,9 +2,16 @@ import streamlit as st
 import hashlib
 import time
 import os
+from sys import argv
 
-from viz import visualize_common_prefixes
-from search import parallel_lloom_search
+from utils.viz import visualize_common_prefixes
+from utils.search import parallel_lloom_search
+from utils.config import load_config
+
+@st.cache_resource
+def load_llms():
+    config_file = 'config.json' if len(argv) < 2 else argv[1]
+    return load_config(config_file)
 
 STARTING_STORIES = [
     "Once upon a time,",
@@ -39,6 +46,9 @@ def main():
     if 'page' not in st.session_state:
         st.session_state.page = 0
         st.session_state.threads = None
+
+    llms = load_llms()
+    for llm in llms: print("Loaded LLM:", llm)
         
     logo, config = st.columns((1,5))
     logo.markdown("### The LLooM :green[v0.3]")
@@ -79,7 +89,7 @@ def main():
             
             with please_wait.status('Searching for suggestions, please wait..') as status:
                 threads = []
-                for thread in parallel_lloom_search(story_so_far, depth, maxsuggestions, ['.',','] if story_depth else [], cutoff, multiplier, maxsplits, LLAMA_PIPELINE_REQUESTS):
+                for thread in parallel_lloom_search(llms, story_so_far, depth, maxsuggestions, ['.',','] if story_depth else [], cutoff, multiplier, maxsplits, LLAMA_PIPELINE_REQUESTS):
                     label = thread[1][len(story_so_far):]
                     status.update(label=label, state="running")
                     threads.append(thread)
@@ -121,9 +131,10 @@ def main():
         with right:
             control_cols = st.columns((1,1,1))
             level_merge = control_cols[0].number_input('Level Merge', min_value=1, max_value=8, value=2)
-            viz = visualize_common_prefixes(labels, level_merge)
-            st.graphviz_chart(viz)            
-            control_cols[1].download_button('Download DOT Graph', viz.source, 'graph.dot', 'text/plain')
+            top_to_bottom = control_cols[1].checkbox('Top-to-Bottom', value=False)
+            viz = visualize_common_prefixes(labels, level_merge, 'TB' if top_to_bottom else 'LR')
+            st.graphviz_chart(viz)
+            control_cols[2].download_button('Download DOT Graph', viz.source, 'graph.dot', 'text/plain')
             control_cols[2].download_button('Download PNG', viz.pipe(format='png'), 'graph.png', 'image/png')
             
         controls = st.container()        

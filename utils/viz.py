@@ -23,9 +23,9 @@ def find_common_prefix(strings):
     remaining = [s[len(prefix):].strip() for s in strings if s[len(prefix):].strip()]
     return prefix, remaining
 
-def visualize_common_prefixes(strings, level_merge=1):
+def visualize_common_prefixes(strings, level_merge=1, rankdir='LR'):
     graph = Digraph()
-    graph.attr(rankdir='TB')  # Set the direction to left-to-right
+    graph.attr(rankdir=rankdir)  # Set the direction to left-to-right
     
     node_list = []
     

@@ -19,9 +19,9 @@ tokenizer_internal = {
     'internal:vicuna': internal_apply_chat_template(lambda system, user, assistant:
 f"""System: {system}
 
-User: {user}
+USER: {user}
 
-Assistant:{assistant}"""),
+ASSISTANT:{assistant}"""),
 
     'internal:alpaca': internal_apply_chat_template(lambda system, user, assistant:
 f"""### Instruction:

@@ -1,4 +1,4 @@
-# Launching Local Servers
+# Local Servers
 
 ## vLLM
 
@@ -44,3 +44,17 @@ Launch llama.cpp server:
 
 | :exclamation: Note that you cannot use -fa as this results in all the logits being `null` and its strongly discouraged to launch with any kind of parallelism because this both reduces available context size and seems to break the KV caching so performance suffers.  |
 |-----------------------------------------|
+
+## KoboldCpp
+
+The [KoboldCPP API](https://github.com/LostRuins/koboldcpp/issues/469) does not support the `logprobs` feature at this time and it doesn't appear to be on the development roadmap.
+
+## Ollama
+
+The [Ollama API](https://github.com/ollama/ollama/issues/2415) does not support the `logprobs` feature, although a PR is available so this may be supported in the future.
+
+# Cloud Services
+
+## Groq
+
+The [Groq API](https://console.groq.com/docs/openai) does not support the `logprobs` feature at this time.
