@@ -1,7 +1,6 @@
 import streamlit as st
 import hashlib
 import time
-import os
 from sys import argv
 
 from utils.viz import visualize_common_prefixes
@@ -18,9 +17,6 @@ STARTING_STORIES = [
     "The forest seemed darker then usual, but that did not bother Elis in the least.",
     "In the age before man,"
 ]
-
-LLAMA_PIPELINE_REQUESTS = int(os.getenv('LLAMA_PIPELINE_REQUESTS', 1))
-print("LLAMA_PIPELINE_REQUESTS", LLAMA_PIPELINE_REQUESTS)
 
 def computeMD5hash(my_string):
     m = hashlib.md5()
@@ -54,6 +50,8 @@ def main():
     logo.markdown("### The LLooM :green[v0.3]")
 
     with config.expander('Configuration', expanded=False):
+        parallel_requests = st.number_input('Parallel LLM Requests', min_value=1, max_value=16, value=4, help="Raise this value if using vLLM or another batch-capable server")
+        
         config_cols = st.columns((1,1))
         config_cols[0].markdown('_Stop conditions_')
         story_depth = config_cols[0].checkbox("Auto-Stop (early terminate if a period or comma is encountered)", value=True)
@@ -78,7 +76,14 @@ def main():
     else:
         story_so_far = st.session_state.story_so_far        
         new_story_so_far = left.text_area("Story so far", story_so_far, label_visibility='hidden', height=300)
-        if left.button('Suggest Again'):
+
+        model_enables = [True] * len(llms)
+        model_cols = left.columns(len(llms)+1)
+        for llm_idx, llm in enumerate(llms):
+            model_enables[llm_idx] = model_cols[llm_idx+1].checkbox(llm["name"], key=f'llm-enable-{llm_idx}', value=True)
+        llms_enabled = [x[0] for x in zip(llms, model_enables) if x[1]]
+        
+        if model_cols[0].button('Suggest Again'):
             story_so_far = new_story_so_far
             st.session_state.story_so_far = story_so_far
             st.session_state.threads = None
@@ -89,7 +94,7 @@ def main():
             
             with please_wait.status('Searching for suggestions, please wait..') as status:
                 threads = []
-                for thread in parallel_lloom_search(llms, story_so_far, depth, maxsuggestions, ['.',','] if story_depth else [], cutoff, multiplier, maxsplits, LLAMA_PIPELINE_REQUESTS):
+                for thread in parallel_lloom_search(llms_enabled, story_so_far, depth, maxsuggestions, ['.',','] if story_depth else [], cutoff, multiplier, maxsplits, parallel_requests):
                     label = thread[1][len(story_so_far):]
                     status.update(label=label, state="running")
                     threads.append(thread)

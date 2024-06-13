@@ -39,7 +39,7 @@ def visualize_common_prefixes(strings, level_merge=1, rankdir='LR'):
 
         if prefix:
             node_label = prefix.strip()
-            node_id = f"{int(level/level_merge)}-{node_label}"
+            node_id = f"{int(level/level_merge)}-{node_label.replace(':','_')}"
             if node_id not in node_list and node_label != '':
                 graph.node(node_id, node_label, shape='box', style='filled', fillcolor='lightgrey', fontsize='12')
                 node_list.append(node_id)
