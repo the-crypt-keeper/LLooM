@@ -2,8 +2,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from .logits import SimpleProbability
 
 def parallel_get_logprobs(llms, prompt, acc):
+    futures = []
+    with ThreadPoolExecutor(max_workers=len(llms)) as executor:
+        for llm in llms:
+            futures.append(executor.submit(llm['get_logprobs'], prompt, llm))
+                
     logprobs = []
-    for llm in llms: logprobs += llm['get_logprobs'](prompt, llm)
+    for future in as_completed(futures): logprobs += future.result()
 
     merged_logprobs = {}
     for prob in logprobs:

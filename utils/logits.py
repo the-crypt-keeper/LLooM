@@ -20,9 +20,11 @@ def get_logprobs_llama(prompt, llm):
             'n_probs': logprobs,
             'samplers': []
            }
-    
-    response = requests.post(url, json=payload)
-    probs = response.json()['completion_probabilities'][0]['probs']
+    try:
+        response = requests.post(url, json=payload)
+        probs = response.json()['completion_probabilities'][0]['probs']
+    except:
+        probs = []
     return [ SimpleProbability(prob['tok_str'], prob['prob']) for prob in probs]
 
 openai_model_names = {}
@@ -65,7 +67,7 @@ def get_logprobs_openai(prompt, llm):
         print(resp)
         raise Exception('/v1/completions call failed')
 
-    print(response.text)
+    # print(response.text)
     if resp['choices'][0]['logprobs'] is None:
         return []
     

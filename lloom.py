@@ -71,10 +71,12 @@ def main():
         start_prompt = st.selectbox("Start Prompt", STARTING_STORIES, index=1)
         if st.button("Start"):
             st.session_state.story_so_far = start_prompt
+            st.session_state.auto_rounds = 0
+            st.session_state.completion = ""
             st.session_state.page = 1
             st.rerun()
     else:
-        story_so_far = st.session_state.story_so_far        
+        story_so_far = st.session_state.story_so_far
         new_story_so_far = left.text_area("Story so far", story_so_far, label_visibility='hidden', height=300)
 
         model_enables = [True] * len(llms)
@@ -86,8 +88,17 @@ def main():
         if model_cols[0].button('Suggest Again'):
             story_so_far = new_story_so_far
             st.session_state.story_so_far = story_so_far
+            st.session_state.completion = ""
             st.session_state.threads = None
+            st.session_state.auto_rounds = 0
         
+        if model_cols[0].button('Autopilot x10'):
+            story_so_far = new_story_so_far
+            st.session_state.story_so_far = story_so_far
+            st.session_state.completion = ""
+            st.session_state.threads = None
+            st.session_state.auto_rounds = 10
+                    
         if st.session_state.threads == None:
             t0 = time.time()
             tokens = 0
@@ -124,9 +135,11 @@ def main():
             st.session_state.add_space = add_space
             
             # if there is only one option - take it.
-            if len(good_threads) == 1:
+            if len(good_threads) == 1 or st.session_state.auto_rounds > 0:
                 st.session_state.story_so_far += (" " if add_space else "") + good_threads[0][1]
                 st.session_state.threads = None
+                if st.session_state.auto_rounds > 0:
+                    st.session_state.auto_rounds -= 1
                 st.rerun()  
             
         threads = st.session_state.threads
@@ -150,14 +163,43 @@ def main():
         
         sum_probs = sum([prob for prob, _ in threads])
         with buttons:
+            # for prob, thread in threads:
+            #     col1, col2 = st.columns((3,1))
+            #     col2.progress(value=prob/sum_probs)
+            #     new_text = col1.text_input(thread, value=thread, key='text-'+computeMD5hash(thread), label_visibility='hidden')
+            #     if col2.button(':arrow_right:', key='ok-'+computeMD5hash(thread)):
+            #         st.session_state.story_so_far += (" " if user_add_space else "") + new_text
+            #         st.session_state.threads = None
+            #         st.rerun()                
+            options = {}
             for prob, thread in threads:
-                col1, col2 = st.columns((3,1))
-                col2.progress(value=prob/sum_probs)
-                new_text = col1.text_input(thread, value=thread, key='text-'+computeMD5hash(thread), label_visibility='hidden')
-                if col2.button(':arrow_right:', key='ok-'+computeMD5hash(thread)):
-                    st.session_state.story_so_far += (" " if user_add_space else "") + new_text
-                    st.session_state.threads = None
-                    st.rerun()                
+                if st.session_state.completion != "" and (not thread.startswith(st.session_state.completion)):
+                    continue
+                remaining = thread[len(st.session_state.completion):]
+                words = remaining.split(' ')
+                if len(remaining) == 0:
+                    continue
+                next_word = words[0]+(' ' if len(words)>1 else '')
+                if next_word not in options: options[next_word] = []
+                options[next_word].append(' '.join(words[1:]))
+                
+            for idx, option in enumerate(options.keys()):
+                c0, c1, c2 = st.columns((1,1,5))
+                if idx == 0:
+                    c0.write(st.session_state.completion)
+                if c1.button(option.replace('\n','\\n'), key=f'option-{len(st.session_state.completion)}-{idx}'):
+                    st.session_state.completion += option
+                    st.rerun()
+                c2.write(' | '.join(options[option]))
+            if len(options) == 0:
+                st.session_state.story_so_far += (" " if add_space else "") + st.session_state.completion
+                st.session_state.completion = ""
+                st.session_state.threads = None                
+                st.rerun()
+            elif len(options) == 1:
+                st.session_state.completion += list(options.keys())[0]
+                st.rerun()
+                
 
 if __name__ == "__main__":
     main()
