@@ -54,6 +54,7 @@ def stream_response(llm, user_input, prompt, n = 8):
                                 #     print(json_data['choices'][0])
                                 if all(done): break
                         elif 'event' in json_data:
+                            # print(json_data)
                             if json_data['event'] == 'stream':
                                 tokens += 1
                                 if first_token_time is None: first_token_time = time.time()
@@ -70,7 +71,7 @@ def stream_response(llm, user_input, prompt, n = 8):
         print(f"Error: {e}")
         
     ttfs = first_token_time-req_start_time if (first_token_time is not None) and (req_start_time is not None) else None
-    elapsed = time.time()-req_start_time if req_start_time is not None else None
+    elapsed = time.time()-first_token_time if first_token_time is not None else None
         
     return completions, tokens, ttfs, elapsed
 
