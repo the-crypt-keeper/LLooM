@@ -10,7 +10,7 @@ from utils.config import load_config
 @st.cache_resource
 def load_llms():
     config_file = 'config.json' if len(argv) < 2 else argv[1]
-    return load_config(config_file)
+    return load_config(config_file)['llms']
 
 STARTING_STORIES = [
     "Once upon a time,",
@@ -105,7 +105,7 @@ def main():
             
             with please_wait.status('Searching for suggestions, please wait..') as status:
                 threads = []
-                for thread in parallel_lloom_search(llms_enabled, story_so_far, depth, maxsuggestions, ['.',','] if story_depth else [], cutoff, multiplier, maxsplits, parallel_requests):
+                for thread in parallel_lloom_search(llms_enabled, story_so_far, depth, maxsuggestions, ['.'] if story_depth else [], cutoff, multiplier, maxsplits, parallel_requests):
                     label = thread[1][len(story_so_far):]
                     status.update(label=label, state="running")
                     threads.append(thread)
@@ -184,13 +184,22 @@ def main():
                 options[next_word].append(' '.join(words[1:]))
                 
             for idx, option in enumerate(options.keys()):
-                c0, c1, c2 = st.columns((1,1,5))
+                c0, c1, c2 = st.columns((1,2,5))
                 if idx == 0:
                     c0.write(st.session_state.completion)
                 if c1.button(option.replace('\n','\\n'), key=f'option-{len(st.session_state.completion)}-{idx}'):
                     st.session_state.completion += option
                     st.rerun()
                 c2.write(' | '.join(options[option]))
+            
+            # c0, c1 = st.columns((3,5))
+            # write_in = c0.text_input(label='Write-in',value='')
+            # if c1.button('Override'):
+            #     st.session_state.story_so_far += (" " if add_space else "") + st.session_state.completion + write_in
+            #     st.session_state.completion = ""
+            #     st.session_state.threads = None                
+            #     st.rerun()               
+            
             if len(options) == 0:
                 st.session_state.story_so_far += (" " if add_space else "") + st.session_state.completion
                 st.session_state.completion = ""

@@ -11,7 +11,7 @@ if 'results' not in st.session_state: st.session_state.results = []
 @st.cache_resource
 def load_llms():
     config_file = 'config.json' if len(argv) < 2 else argv[1]
-    return load_config(config_file)
+    return load_config(config_file)['llms']
 
 st.set_page_config(layout='wide', page_title='VisuaLL')
 st.markdown("""

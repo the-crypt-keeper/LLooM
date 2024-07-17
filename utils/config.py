@@ -51,6 +51,7 @@ def load_config(config_file):
         if llm['get_logprobs'] is None: raise Exception(f'Invalid engine {llm["engine"]}, must be one of: openai, llamacpp')        
         if llm['api_url'] is None: raise Exception(f'Missing api_url')
         if llm.get('model') is None: llm['model'] = requests.get(llm['api_url']+'/v1/models').json()['data'][0]['id']
+        if llm.get('name') is None: llm['name'] = llm['model']
 
         llm['apply_chat_template'] = tokenizer_internal[llm["tokenizer"]] if llm["tokenizer"] in tokenizer_internal else AutoTokenizer.from_pretrained(llm["tokenizer"], trust_remote_code=True).apply_chat_template if llm.get("tokenizer") else None
         
