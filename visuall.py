@@ -233,6 +233,8 @@ if len(st.session_state.results) > 0:
     fig1 = px.line(df, title="Cumulative Probability", color_discrete_sequence=px.colors.qualitative.G10, height=250)
     df2 = pd.DataFrame(data_top)
     fig2 = px.line(df2, title="Top Probability", color_discrete_sequence=px.colors.qualitative.G10, height=250)
+    for llm_name, probs in data_top.items():
+        st.write(f"{llm_name} creativity {sum(probs)}")
     
     sl, sr = st.columns((1,1))
     sl.plotly_chart(fig1, use_container_width=True)
