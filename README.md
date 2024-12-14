@@ -1,8 +1,8 @@
 # The LLooM
 
-Leverage raw LLM logits to weave the threads propability a few tokens at a time.
+Leverage raw LLM logits to weave the threads probability a few tokens at a time.
 
-The problem with straight greedy decoding is that due to the self-recursive nature of LLMs, if there's a high-propability token hidden behind a low-probability one then greedy wont find it.
+The problem with straight greedy decoding is that due to the self-recursive nature of LLMs, if there's a high-probability token hidden behind a low-probability one then greedy wont find it.
 
 Conceptually this idea is similar to beamsearching, tracking multiple candidates at once, but with a human in the loop and unlimited beams.
 
@@ -115,7 +115,7 @@ The parameters are grouped into two sections: when to stop, and when to split.
 
 ## Split Conditions
 
-`Cutoff` The minimum token propability (0.0 - 1.0) to spawn a new thread.
+`Cutoff` The minimum token probability (0.0 - 1.0) to spawn a new thread.
 
 `Multiplier` cutoff per token slope (1.0: fixed cutoff, <1.0 cutoff decreases with depth, >1.0 cutoff increases with depth)
 
